@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
-from torchvision import transforms
+from torchvision import transforms, models
 from torch.utils.data import DataLoader
 
-from models import SimpleCNN
+from models import SimpleCNN, SimpleResNet
 from preprocess import AMVDataset, ToTensor
 from utils import save_model
 
@@ -62,7 +62,11 @@ def train(model, trainloader, num_epochs, lr, optimizer, criterion,
 
 
 if __name__ == "__main__":
-    model = SimpleCNN(num_classes=3)
+    # model = SimpleResNet(num_classes=3)
+    model = models.resnet50(pretrained=True)
+    for param in model.parameters():
+        param.requires_grad = False
+    model.fc = nn.Linear(in_features=model.fc.in_features, out_features=3)
     trainloader = gen_trainloader(root_dir="data", batch_size=32, num_workers=1)
     num_epochs = 2
     lr = 1e-4
@@ -79,4 +83,4 @@ if __name__ == "__main__":
         verbose=True
     )
     print(losses)
-    save_model(model, "basic")
+    # save_model(model, "basic")
