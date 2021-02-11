@@ -23,10 +23,10 @@ class ToTensor(object):
             'data' : torch.from_numpy(data),
             'label' : torch.from_numpy(label).long().squeeze()
         }
-    
+
 
 class AMVDataset(Dataset):
-    def __init__(self, root_dir, ens, lead, tstep=86, transform=None):
+    def __init__(self, istrain, percent_train, root_dir, ens, lead, tstep=86, transform=None):
         """
         Args:
             root_dir (string): Directory with all the images.
@@ -34,14 +34,22 @@ class AMVDataset(Dataset):
                 on a sample.
         """
         self.transform = transform
-        
+
         datapath = os.path.join(root_dir, f"CESM_data_sst_sss_psl_deseason_normalized_resized_detrend{lead}.npy")
-        self.data = np.load(datapath)[:, 0:ens, ...]
-        self.data = (self.data[:,:,:tstep-lead,:,:]).reshape(3,ens*(tstep-lead),224,224).transpose(1,0,2,3)
-        
+        data = np.load(datapath)[:, 0:ens, ...]
+        data = (data[:,:,:tstep-lead,:,:]).reshape(3,ens*(tstep-lead),224,224).transpose(1,0,2,3)
+        if istrain:
+            self.data = data[0:int(np.floor(percent_train*(tstep-lead)*ens)),:,:,:]
+        else:
+            self.data = data[int(np.floor(percent_train*(tstep-lead)*ens)):,:,:,:]
+
         labelpath = os.path.join(root_dir, f"CESM_label_amv_index_detrend{lead}.npy")
-        self.label = np.load(labelpath)[0:ens, :]
-        self.label = self.label[:ens,lead:].reshape(ens*(tstep-lead),1)
+        label = np.load(labelpath)[0:ens, :]
+        label = label[:ens,lead:].reshape(ens*(tstep-lead),1)
+        if istrain:
+            self.label = label[0:int(np.floor(percent_train*(tstep-lead)*ens)),:]
+        else:
+            self.label = label[int(np.floor(percent_train*(tstep-lead)*ens)):,:]
 
     def __len__(self):
         return self.label.size
@@ -51,7 +59,7 @@ class AMVDataset(Dataset):
             idx = idx.tolist()
 
         sample = {
-            'data': self.data[idx], 
+            'data': self.data[idx],
             'label': self.label[idx]
         }
 

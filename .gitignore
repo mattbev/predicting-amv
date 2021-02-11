@@ -1,5 +1,6 @@
 # data
 data/
+saved_models/
 
 # virtualenv
 p-amv/
