@@ -9,3 +9,4 @@ def save_model(model, name):
 def load_model(model, name):
     model.load_state_dict(torch.load(os.path.join("saved_models", f"{name}.pkl")))
     return model
+

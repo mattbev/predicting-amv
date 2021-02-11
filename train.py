@@ -6,11 +6,14 @@ from torchvision import transforms, models
 from torch.utils.data import DataLoader
 
 from models import SimpleCNN, SimpleResNet
-from preprocess import AMVDataset, ToTensor
+from preprocess import AMVDataset, ToTensor, Shift
 from utils import save_model
 
-def gen_trainloader(root_dir:str, batch_size:int=8, num_workers:int=1) -> DataLoader:
-    trainset = AMVDataset(root_dir=root_dir, transform=transforms.Compose([ToTensor()]))
+def gen_trainloader(root_dir:str, batch_size:int=8, ens=40, lead=0, num_workers:int=1) -> DataLoader:
+    trainset = AMVDataset(root_dir=root_dir, ens=ens, lead=lead, transform=transforms.Compose([
+        ToTensor(),
+        Shift()
+    ]))
     trainloader = DataLoader(trainset, batch_size=batch_size, num_workers=num_workers)
     return trainloader
 
@@ -18,7 +21,7 @@ def gen_trainloader(root_dir:str, batch_size:int=8, num_workers:int=1) -> DataLo
 def train(model, trainloader, num_epochs, lr, optimizer, criterion,
     verbose=False,
     device="cuda" if torch.cuda.is_available() else "cpu",
-    print_every=50
+    print_every=10
     ) -> list:
 
     print(f"Training {type(model)} model.")	            
@@ -42,6 +45,7 @@ def train(model, trainloader, num_epochs, lr, optimizer, criterion,
             inputs = sample["data"].to(device)
             labels = sample["label"].to(device)
             optimizer.zero_grad()
+            print(labels)
 
             # forward + backward + optimize
             outputs = model(inputs)
@@ -62,11 +66,11 @@ def train(model, trainloader, num_epochs, lr, optimizer, criterion,
 
 
 if __name__ == "__main__":
-    # model = SimpleResNet(num_classes=3)
-    model = models.resnet50(pretrained=True)
-    for param in model.parameters():
-        param.requires_grad = False
-    model.fc = nn.Linear(in_features=model.fc.in_features, out_features=3)
+    model = SimpleCNN(num_classes=3)
+    # model = models.resnet50(pretrained=True)
+    # for param in model.parameters():
+    #     param.requires_grad = False
+    # model.fc = nn.Linear(in_features=model.fc.in_features, out_features=3)
     trainloader = gen_trainloader(root_dir="data", batch_size=32, num_workers=1)
     num_epochs = 2
     lr = 1e-4
