@@ -15,15 +15,20 @@ class ToTensor(object):
     
 
 class AMVDataset(Dataset):
-    def __init__(self, root_dir, transform=None):
+    def __init__(self, root_dir, ens, transform=None):
         """
         Args:
             root_dir (string): Directory with all the images.
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        self.root_dir = root_dir
+        self.ens = ens
         self.transform = transform
+        
+        datapath = os.path.join(root_dir, "x.npy")
+        labelpath = os.path.join(root_dir, "y.npy")
+        self.data = np.load(datapath)[:, 0:ens, ...]
+        self.label = np.load(labelpath)[0:ens, :]
 
     def __len__(self):
         return len(next(os.walk(self.root_dir))[1])
@@ -32,19 +37,6 @@ class AMVDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        datapath = os.path.join(
-            self.root_dir,
-            str(idx),
-            "x.npy"
-        )
-        labelpath = os.path.join(
-            self.root_dir,
-            str(idx),
-            "y.npy"
-        )
-        data = np.load(datapath).squeeze()
-        label = np.load(labelpath)
-        label = label.squeeze()
         sample = {'data': data, 'label': label}
 
         if self.transform:
